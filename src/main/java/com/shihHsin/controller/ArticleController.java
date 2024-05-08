@@ -33,25 +33,41 @@ import java.util.Map;
 @RequestMapping("/article")
 public class ArticleController {
     @Resource
-    public IArticleService articleServer;
+    public IArticleService articleService;
     @Resource
     public IArticleChainService articleChainService;
     @Resource
     private IIpfsService ipfsService;
 
     @RequestMapping("/list")
-    public R get() {
+    public R getArticleList() {
         log.debug("debugAAsadas");
-        List<Article> articleList = articleServer.list();
+        List<Article> articleList = articleService.list();
+        return R.success(articleList);
+    }
+
+    @RequestMapping("/chainList")
+    public R getChainList() {
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::isChained, true);
+        List<Article> articleList = articleService.list(wrapper);
         return R.success(articleList);
     }
 
     @RequestMapping("/chainInfo/{id}")
     public R getArticleChain(@PathVariable("id") Integer id) {
-        log.debug("debug:getById"+  id.toString());
+        log.debug("debug:getById" + id.toString());
         LambdaQueryWrapper<ArticleChain> wrapper = new LambdaQueryWrapper<>();
         ArticleChain articleChain = articleChainService.getOne(wrapper.eq(ArticleChain::getArticleId, id));
         return R.success(articleChain);
+    }
+
+    @RequestMapping("/{id}")
+    public R getArticleById(@PathVariable("id") Integer id) {
+        log.debug("debug:getById" + id.toString());
+//        LambdaQueryWrapper<ArticleChain> wrapper = new LambdaQueryWrapper<>();
+        Article article = articleService.getById(id);
+        return R.success(article);
     }
 
 
@@ -92,6 +108,7 @@ public class ArticleController {
 
     /**
      * 上傳
+     *
      * @param article Data
      * @return R
      */
@@ -108,9 +125,9 @@ public class ArticleController {
             articleEntity.setPublicationDate(timestamp);
             articleEntity.setChained(article.isChained());
             articleEntity.setState(true);
-            articleServer.save(articleEntity);
+            articleService.save(articleEntity);
             Integer articleId = articleEntity.getId();
-            if(article.isChained()) {
+            if (article.isChained()) {
                 ArticleChain articleChain = new ArticleChain();
                 articleChain.setArticleId(articleId);
                 articleChain.setAuthorAddress(article.getAddress());
@@ -127,8 +144,6 @@ public class ArticleController {
         }
 
     }
-
-
 
 
 }

@@ -60,7 +60,7 @@ public class UserController {
 
         // 其他屬性設定（性別、註冊日期等）
         newUser.setRegistrationDate(Timestamp.valueOf(LocalDateTime.now())); // 或從前端取得註冊日期
-
+        newUser.setStatus(true); // 註冊成功後，預設啟用帳號
         // 執行註冊
         boolean saved = userService.save(newUser);
         if (!saved) {
@@ -93,25 +93,10 @@ public class UserController {
         return R.success(user);
     }
 
-
-//    @PostMapping("/login")
-//    public R login(@RequestBody SignUpDto loginDto, HttpSession session){
-//        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-//        User user = userService.getOne(wrapper.eq(User::getPhone, loginDto.getPhone()));
-//        String  is = (String)myRedisTemplate.opsForValue().get("code");
-//        if (loginDto.getCode().equals(is)){
-//            User curUser = new User();
-//            if (user == null){
-//                curUser.setPhone(loginDto.getPhone());
-//                curUser.setStatus(1);
-//                userService.save(curUser);
-//            }else {
-//                curUser = user;
-//            }
-//            session.setAttribute("user", curUser);
-//            return R.success(user);
-//        }
-//        return R.error("登录失败");
-//    }
+    @GetMapping("/logout")
+    public R logout(HttpSession session) {
+        session.invalidate();
+        return R.success("登出成功");
+    }
 }
 

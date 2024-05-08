@@ -5,21 +5,21 @@ server:
   port: 8000
 
 ## 数据库连接配置 aws
-#spring:
-#  datasource:
-#    url: jdbc:mysql://database-mysql.cli4qmaoiviu.ap-northeast-1.rds.amazonaws.com:3306/social
-#    username: shuAdmin
-#    password: ShihHsinabc123
-#    driver-class-name: com.mysql.cj.jdbc.Driver
+spring:
+  datasource:
+    url: jdbc:mysql://database-mysql.cli4qmaoiviu.ap-northeast-1.rds.amazonaws.com:3306/social
+    username: shuAdmin
+    password: ShihHsinabc123
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
 
 # 数据库连接配置 localhost
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/social
-    username: root
-    password: abc123
-    driver-class-name: com.mysql.cj.jdbc.Driver
+#spring:
+#  datasource:
+#    url: jdbc:mysql://localhost:3306/social
+#    username: root
+#    password: abc123
+#    driver-class-name: com.mysql.cj.jdbc.Driver
 
 mybatis-plus:
   configuration:
