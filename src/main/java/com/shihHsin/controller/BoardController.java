@@ -26,23 +26,23 @@ import java.util.Map;
 @Slf4j
 @CrossOrigin(origins = "http://localhost:5173") //dev
 @RestController
-@RequestMapping("")
+@RequestMapping("/board")
 public class BoardController {
     @Resource
     public IBoardService boardService;
 
 
-    @RequestMapping("/board")
+    @RequestMapping("/list")
     public R get() {
         LambdaQueryWrapper<Board> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.select(Board::getBoardId, Board::getBoardName)  // 指定需要查询的字段
+        queryWrapper.select(Board::getId, Board::getName)  // 指定需要查询的字段
                 .orderByDesc(Board::getFollowersCount)
                 .last("limit 16");
         List<Board> boardList = boardService.list(queryWrapper);
-
+        log.info("boardList: {}", boardList);
         Map<Integer, String> boards = new HashMap<>();
         for (Board board : boardList) {
-            boards.put(board.getBoardId(), board.getBoardName());
+            boards.put(board.getId(), board.getName());
         }
         return R.success(boards);
     }

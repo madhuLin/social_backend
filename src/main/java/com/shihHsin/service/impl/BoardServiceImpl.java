@@ -14,5 +14,5 @@ import org.springframework.stereotype.Service;
  * @since 2024-4-12
  */
 @Service
-public class BoardServiceImpl  extends ServiceImpl<BoardMapper, Board> implements IBoardService {
+public class BoardServiceImpl extends ServiceImpl<BoardMapper, Board> implements IBoardService {
 }

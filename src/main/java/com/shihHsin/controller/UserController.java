@@ -6,10 +6,11 @@ import com.shihHsin.Dto.LoginDto;
 import com.shihHsin.Dto.SignUpDto;
 import com.shihHsin.common.R;
 import com.shihHsin.pojo.User;
-import com.shihHsin.service.UserService;
+import com.shihHsin.service.IUserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
@@ -25,12 +26,12 @@ import java.time.LocalDateTime;
  */
 @RestController
 @Slf4j
-@CrossOrigin(origins = "http://localhost:5173") //dev
+//@CrossOrigin(origins = "http://localhost:5173") //dev
 @RequestMapping("/user")
 public class UserController {
 
     @Resource
-    private UserService userService;
+    private IUserService userService;
 
     /**
      * 註冊
@@ -40,33 +41,33 @@ public class UserController {
     @PostMapping("/signUp")
     public R signUp(@RequestBody SignUpDto signUpDto, HttpSession session) {
         // 檢查使用者名稱是否已經存在
-//        log.debug("run signUp" + signUpDto.toString());
+        log.debug("run signUp" + signUpDto.toString());
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        User existingUser = userService.getOne(wrapper.eq(User::getUsername, signUpDto.getUsername()));
+        User existingUser = userService.getOne(wrapper.eq(User::getName, signUpDto.getUsername()));
         if (existingUser != null) {
             return R.error("使用者名稱已存在!");
         }
 
+        log.debug("run signUpAA:" + signUpDto.toString());
         // 建立使用者物件並設定屬性
         User newUser = new User();
-        newUser.setUsername(signUpDto.getUsername());
+        newUser.setName(signUpDto.getUsername());
         newUser.setAddress(signUpDto.getAddress());
         newUser.setEmail(signUpDto.getEmail());
-        newUser.setPassword(signUpDto.getPassword()); // 在實際應用程式中，請務必對密碼進行安全處理，如雜湊處理
+        String password = signUpDto.getPassword();
+        password = DigestUtils.md5DigestAsHex(password.getBytes());
+        newUser.setPassword(password); // 在實際應用程式中，請務必對密碼進行安全處理，如雜湊處理
 
         // 其他屬性設定（性別、註冊日期等）
-//        newUser.setSex(signUpDto.getSex());
         newUser.setRegistrationDate(Timestamp.valueOf(LocalDateTime.now())); // 或從前端取得註冊日期
 
         // 執行註冊
         boolean saved = userService.save(newUser);
-        if (saved) {
-            // 註冊成功
-            return R.success("註冊成功");
-        } else {
+        if (!saved) {
             // 註冊失敗
             return R.error("註冊失敗");
         }
+        return R.success("註冊成功");
     }
 
 
@@ -75,15 +76,21 @@ public class UserController {
         // 檢查使用者名稱是否已經存在
         log.debug("run loginDto" + loginDto.toString());
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        User user = userService.getOne(wrapper.eq(User::getUsername, loginDto.getUsername()));
+        User user = userService.getOne(wrapper.eq(User::getEmail, loginDto.getEmail()));
         if (user == null) {
             return R.error("帳號不存在!");
         }
-        else {
-            log.debug("password" + user.getPassword() + loginDto.getPassword());
-            if(user.getPassword().equals(loginDto.getPassword())) return R.success("成功登入!!");
-            else return R.error("密碼錯誤!");
+        log.debug("password" + user.getPassword() + loginDto.getPassword());
+        String password = loginDto.getPassword();
+        password = DigestUtils.md5DigestAsHex(password.getBytes());
+        if(!user.getPassword().equals(password)) {
+            session.setAttribute("user", user);
+            return R.error("密碼錯誤!");
+
         }
+        if(!user.isStatus()) return R.error("帳號已被禁用!");
+        session.setAttribute("user", user);
+        return R.success(user);
     }
 
 

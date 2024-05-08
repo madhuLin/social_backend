@@ -3,7 +3,7 @@ package com.shinHsin;
 import com.shihHsin.SHApplication;
 import com.shihHsin.pojo.User;
 import com.shihHsin.mapper.TestMapper;
-import com.shihHsin.service.UserService;
+import com.shihHsin.service.IUserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ public class UserRepositoryIntegrationTest {
 
 
     @Resource
-    private UserService userService;
+    private IUserService userService;
     @Test
     public void findUser() {
         log.debug("askadnjkasn");

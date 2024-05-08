@@ -1,8 +1,11 @@
 package com.shihHsin.pojo;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import java.sql.Timestamp;
 /**
  * <p>
@@ -14,17 +17,19 @@ import java.sql.Timestamp;
  */
 @Data
 public class Article {
-    @TableId
-    private Integer articleId;
-    private String articleTitle;
-    private String articleContent;
-    private int articleAuthorId;
-    private String articleAuthorName;
+    @TableId(value = "id", type = IdType.AUTO)
+    private Integer id;
+    private String title;
+    private String content;
+    private Integer authorId;
+    private String authorName;
+    private String authorAddress;
     private Timestamp publicationDate;
-    private int articleState;
-    private int readCount;
-    private int likeCount;
-    private int commentCount;
-    private int bookmarkCount;
+    private boolean state;
+    private Integer readCount;
+    private Integer likeCount;
+    private Integer commentCount;
+    private Integer bookmarkCount;
+    private boolean chained;
 }
 

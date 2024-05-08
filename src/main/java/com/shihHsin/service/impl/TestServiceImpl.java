@@ -25,7 +25,7 @@ public class TestServiceImpl extends ServiceImpl<TestMapper, User> implements IT
     @Override
     public List<User> getUsers() {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.orderByAsc(User::getUserId);
+        wrapper.orderByAsc(User::getId);
 //        List<User> users = list(wrapper);
         // 調用 service 或 mapper 的相應方法執行查詢，這裡假設您已經注入了相應的 service 或 mapper
 //        return users;

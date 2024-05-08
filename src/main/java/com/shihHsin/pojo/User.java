@@ -16,8 +16,8 @@ import lombok.Data;
 @Data
 public class User {
     @TableId
-    private Long userId;
-    private String username;
+    private Long id;
+    private String name;
     private String address;
     private String email;
     private String sex;
@@ -25,5 +25,5 @@ public class User {
     private String password;
     private String avatar;
     private String bio;
-    private String userStatus;
+    private boolean status;
 }

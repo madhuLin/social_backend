@@ -12,6 +12,6 @@ import com.shihHsin.pojo.User;
  * @author madhu
  * @since 2024-4-10
  */
-public interface UserService extends IService<User> {
+public interface IUserService extends IService<User> {
 
 }

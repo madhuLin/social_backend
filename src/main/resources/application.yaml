@@ -2,7 +2,7 @@
 
 # 服务器端口配置
 server:
-  port: 8080
+  port: 8000
 
 ## 数据库连接配置 aws
 #spring:
@@ -34,6 +34,9 @@ mybatis-plus:
     hump-to-underline: true
 
 
+ipfs:
+  config:
+    multi-addr: /ip4/127.0.0.1/tcp/5001 # ipfs的服务器地址和端口
 
 # 日志配置
 logging:

@@ -1,6 +1,4 @@
 package com.shihHsin.service;
-
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.shihHsin.pojo.Board;
 /**

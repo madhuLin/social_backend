@@ -4,7 +4,7 @@ package com.shihHsin.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shihHsin.mapper.UserMapper;
 import com.shihHsin.pojo.User;
-import com.shihHsin.service.UserService;
+import com.shihHsin.service.IUserService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -16,6 +16,6 @@ import org.springframework.stereotype.Service;
  * @since 2024-4-10
  */
 @Service
-public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
 
 }
