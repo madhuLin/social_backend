@@ -7,6 +7,7 @@ import com.shihHsin.service.IUserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import java.util.List;
 
@@ -17,6 +18,7 @@ public class UserRepositoryIntegrationTest {
 //    private ITestService testService;
 
     @Resource
+    @Autowired
     private TestMapper testMapper;
     UserRepositoryIntegrationTest() {
 
@@ -41,4 +43,7 @@ public class UserRepositoryIntegrationTest {
         list.forEach(System.out::println);
         System.out.println("safsfsdfdsf");
     }
+
+
+
 }

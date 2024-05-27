@@ -5,9 +5,9 @@ import com.shihHsin.Dto.ArticleDto;
 import com.shihHsin.common.R;
 import com.shihHsin.pojo.Article;
 import com.shihHsin.pojo.ArticleChain;
-import com.shihHsin.service.IArticleChainService;
-import com.shihHsin.service.IArticleService;
-import com.shihHsin.service.IIpfsService;
+import com.shihHsin.pojo.Comment;
+import com.shihHsin.pojo.User;
+import com.shihHsin.service.*;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +38,12 @@ public class ArticleController {
     public IArticleChainService articleChainService;
     @Resource
     private IIpfsService ipfsService;
+
+    @Resource
+    private IUserService userService;
+
+    @Resource
+    public ICommentService commentService;
 
     @RequestMapping("/list")
     public R getArticleList() {
@@ -145,5 +151,42 @@ public class ArticleController {
 
     }
 
+
+    /**
+     * 文章留言列表
+     *
+     * @return R
+     */
+    @RequestMapping("/commentList")
+    public R getCommentList() {
+        log.debug("debug:getCommentList");
+         List<Comment> commentList = commentService.list();
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+
+        for(Comment comment : commentList) {
+            Integer id = comment.getUser_id();
+            userService.getOne(wrapper.eq(User::getId, id));
+            User user = userService.getOne(wrapper.eq(User::getId, id));
+            comment.setAuthor(user.getName());
+        }
+
+
+        log.debug("debug:getCommentList" + commentList.toString());
+        return R.success(commentList);
+    }
+
+
+    /**
+     * 新增留言
+     *
+     * @return R
+     */
+    @PostMapping("/addComment")
+    public R addComment(@RequestBody Comment comment, HttpSession session) {
+        log.debug("debug:addComment");
+
+        commentService.save(comment);
+        return R.success("留言成功");
+    }
 
 }
