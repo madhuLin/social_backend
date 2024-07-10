@@ -11,5 +11,9 @@ import com.shihHsin.pojo.Article;
  * @since 2024-4-12
  */
 public interface IArticleService extends IService<Article> {
-//    List<Article> selectList(Object o);
+    void updateCommentCount(Integer articleId);
+
+    void updateFavoriteCount(Integer articleId, int i);
+
+    void updateLoveCount(Integer articleId, int i);
 }

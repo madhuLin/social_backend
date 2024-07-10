@@ -4,6 +4,9 @@
 server:
   port: 8000
 
+upload:
+  path: C:/PF/GraduationTopic/Images/
+
 ## 数据库连接配置 aws
 spring:
   datasource:
@@ -11,6 +14,13 @@ spring:
     username: shuAdmin
     password: ShihHsinabc123
     driver-class-name: com.mysql.cj.jdbc.Driver
+  mvc:
+    static-path-pattern: /images/**
+  web:
+    resources:
+#        static-locations: file:/mnt/c/Users/qq104/Documents/Images
+        static-locations: file:C:/PF/GraduationTopic/Images/
+
 
 
 # 数据库连接配置 localhost

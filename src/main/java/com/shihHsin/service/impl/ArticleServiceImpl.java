@@ -20,12 +20,20 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Resource
     private ArticleMapper articleMapper;
 
-//    @Override
-//    public List<Article> selectList() {
-//
-//        List<Article> articleList = articleMapper.selectList(null);
-//        return articleList;
-//
-//    }
+    @Override
+    public void updateCommentCount(Integer articleId) {
+        articleMapper.incrementCommentCount(articleId);
+    }
+
+    @Override
+    public void updateFavoriteCount(Integer articleId, int i) {
+        if(i == 1) articleMapper.incrementFavoriteCount(articleId);
+        else articleMapper.decrementFavoriteCount(articleId);
+    }
+    @Override
+    public void updateLoveCount(Integer articleId, int i) {
+        if(i == 1) articleMapper.incrementLikeCount(articleId);
+        else articleMapper.decrementLikeCount(articleId);
+    }
 
 }
