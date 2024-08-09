@@ -11,6 +11,7 @@ import java.util.List;
 @Data
 public class ArticleDto {
     private String address;
+    private Integer id;
     private String username;
     private String title;
     private String content;
@@ -18,5 +19,6 @@ public class ArticleDto {
     private Long publicationDate; // 文章创建时间
     private boolean chained; // 是否上鏈
     private String transactionHash;
+    private Integer boardId;
 }
 

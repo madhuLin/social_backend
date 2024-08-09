@@ -22,12 +22,14 @@ public class Article {
     private String title;
     private String content;
     private Integer authorId;
+    private Integer boardId;
     private String authorName;
     private String authorAddress;
     private Timestamp publicationDate;
     private boolean state;
     private Integer readCount;
     private Integer likeCount;
+    private Integer dislikeCount;
     private Integer commentCount;
     private Integer bookmarkCount;
     private boolean chained;

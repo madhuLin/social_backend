@@ -19,6 +19,9 @@ public interface ArticleMapper extends BaseMapper<Article> {
     @Update("UPDATE article SET like_count = like_count + 1 WHERE id = #{articleId}")
     void incrementLikeCount(Integer articleId);
 
+    @Update("UPDATE article SET dislike_count = dislike_count + 1 WHERE id = #{articleId}")
+    void incrementDislikeCount(Integer articleId);
+
     @Update("UPDATE article SET like_count = like_count - 1 WHERE id = #{articleId}")
     void decrementLikeCount(Integer articleId);
 }

@@ -5,10 +5,7 @@ import com.shihHsin.Dto.Article2Dto;
 import com.shihHsin.Dto.ArticleDto;
 import com.shihHsin.Dto.CommentDto;
 import com.shihHsin.common.R;
-import com.shihHsin.pojo.Article;
-import com.shihHsin.pojo.ArticleChain;
-import com.shihHsin.pojo.Comment;
-import com.shihHsin.pojo.Image;
+import com.shihHsin.pojo.*;
 import com.shihHsin.service.*;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
@@ -22,10 +19,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -47,13 +43,12 @@ public class ArticleController {
 
     @Resource
     public IArticleService articleService;
-
     @Resource
-    public IImageService imageService;
+    public IBoardService boardService;
     @Resource
     public IArticleChainService articleChainService;
-    @Resource
-    private IIpfsService ipfsService;
+//    @Resource
+//    private IIpfsService ipfsService;
 
     @Resource
     private IUserService userService;
@@ -64,25 +59,72 @@ public class ArticleController {
     @Resource
     public IBookmarkService favoriteService;
 
+    @Resource
+    public ILikeService likeService;
 
     @Resource
-    public ILoveService loveService;
+    public IImageService imageService;
 
+    @Resource
+    public IActivitieService activitieService;
+
+    private CompletableFuture<List<String>> findArticleImagesAsync(int articleId) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Image> images = imageService.findImagesByArticleId(articleId);
+            List<String> imageBytes = new ArrayList<>();
+            for (Image image : images) {
+                Path path = Paths.get(uploadPath, image.getImagePath());
+                try {
+                    byte[] fileContent = Files.readAllBytes(path);
+                    String encodedString = Base64.getEncoder().encodeToString(fileContent);
+                    imageBytes.add(encodedString);
+                } catch (Exception e) {
+                    log.error("Failed to read image file", e);
+                }
+            }
+            return imageBytes;
+        });
+    }
 
     @GetMapping("/list")
-    public R getArticleList(@RequestParam(value = "userId", required = false) Integer userId) {
-        log.debug("debugAAsadas" + (userId != null ? userId.toString() : "null"));
-        List<Article> articleList = articleService.list();
-        List<Article2Dto> article2DtoList = new ArrayList<>();
-        if (userId == null) return R.success(articleList);
-        for (Article article : articleList) {
-            boolean isBookmarked = favoriteService.isArticleBookmarkedByUser(article.getId(), userId);
-            boolean isLove = loveService.isArticleLoveByUser(article.getId(), userId);
-            Article2Dto article2Dto = new Article2Dto(article);
-            article2Dto.setBookmarked(isBookmarked);
-            article2Dto.setLoved(isLove);
-            article2DtoList.add(article2Dto);
+    public R getArticleList(@RequestParam(value = "boardId", required = false) Integer boardId,
+                            @RequestParam(value = "userId", required = false) Integer userId) {
+        log.debug("debug:getArticleList" + (boardId != null ? boardId.toString() : "null") + (userId != null ? userId.toString() : "null"));
+        List<Article> articleList;
+        if (boardId != null) {
+            articleList = articleService.getByBoardId(boardId);
+        } else {
+            articleList = articleService.list();
         }
+
+        Map<Integer, String> boardName = boardService.getBoardNames();
+        List<CompletableFuture<Article2Dto>> futureList = new ArrayList<>();
+
+        for (Article article : articleList) {
+            CompletableFuture<Article2Dto> future = CompletableFuture.supplyAsync(() -> {
+                Article2Dto article2Dto = new Article2Dto(article);
+                if (userId != null) {
+                    boolean isBookmarked = favoriteService.isArticleBookmarkedByUser(article.getId(), userId);
+                    boolean isLove = likeService.isArticleLikeByUser(article.getId(), userId);
+                    boolean isDislike = likeService.isArticleDislikeByUser(article.getId(), userId);
+                    article2Dto.setBookmarked(isBookmarked);
+                    article2Dto.setLiked(isLove);
+                    article2Dto.setDisliked(isDislike);
+                }
+                article2Dto.setBoardName(boardName.get(article.getBoardId()));
+                return article2Dto;
+            }).thenCombine(findArticleImagesAsync(article.getId()), (article2Dto, images) -> {
+                article2Dto.setImages(images);
+                return article2Dto;
+            });
+
+            futureList.add(future);
+        }
+
+        List<Article2Dto> article2DtoList = futureList.stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.toList());
+
         return R.success(article2DtoList);
     }
 
@@ -110,41 +152,20 @@ public class ArticleController {
         return R.success(article);
     }
 
-
 //    @RequestMapping("/uploadIPFS")
-//    public R loadIPFS(String content) {
-////        try {
-////            ObjectMapper objectMapper = new ObjectMapper();
-////            String articleJson = objectMapper.writeValueAsString(article);
-////            log.debug("Converted article to JSON: {}", articleJson);
-////            byte[] data = articleJson.getBytes();
-////            ipfsHash = ipfsService.uploadToIpfs(data);
-////        }
-////        catch (Exception e) {
-////            log.error("Failed to convert article to JSON", e);
-////            return R.error("Failed to convert article to JSON");
-////        }
-////        if(ipfsHash == null) { // upload to IPFS failed
-////            return R.error("Failed to upload article to IPFS");
-////        }
-//
+//    public R loadIPFS(@RequestBody Map<String, Object> requestBody) {
+//        String content = (String) requestBody.get("content");
+//        log.debug("Received article content: {}", content);
+//        String ipfsHash = null;
+//        try {
+//            byte[] data = content.getBytes();
+//            ipfsHash = ipfsService.uploadToIpfs(data);
+//        } catch (Exception e) {
+//            log.error("Failed to upload article to IPFS", e);
+//            return R.error("Failed to upload article to IPFS");
+//        }
+//        return R.success(ipfsHash);
 //    }
-
-
-    @RequestMapping("/uploadIPFS")
-    public R loadIPFS(@RequestBody Map<String, Object> requestBody) {
-        String content = (String) requestBody.get("content");
-        log.debug("Received article content: {}", content);
-        String ipfsHash = null;
-        try {
-            byte[] data = content.getBytes();
-            ipfsHash = ipfsService.uploadToIpfs(data);
-        } catch (Exception e) {
-            log.error("Failed to upload article to IPFS", e);
-            return R.error("Failed to upload article to IPFS");
-        }
-        return R.success(ipfsHash);
-    }
 
     /**
      * 上傳
@@ -153,10 +174,12 @@ public class ArticleController {
      * @return R
      */
     @PostMapping("/upload")
-    public R upload(@RequestBody ArticleDto article, HttpSession session) {
-        log.debug("Received article data: {}", article.toString());
+    public R upload(@ModelAttribute ArticleDto article, HttpSession session) {
+        log.debug("title:" + article.getTitle()+  "time:"+ article.getPublicationDate());
         try {
+            // 創建並保存文章實體
             Article articleEntity = new Article();
+            articleEntity.setAuthorId(article.getId());
             articleEntity.setTitle(article.getTitle());
             articleEntity.setContent(article.getContent());
             articleEntity.setAuthorName(article.getUsername());
@@ -165,11 +188,34 @@ public class ArticleController {
             articleEntity.setPublicationDate(timestamp);
             articleEntity.setChained(article.isChained());
             articleEntity.setState(true);
+
+            // 先保存文章以獲取自動生成的ID
             articleService.save(articleEntity);
             Integer articleId = articleEntity.getId();
+
+            // 保存圖片
+            List<MultipartFile> images = article.getImages();
+            if (images != null) {
+                int imageOrder = 1;
+                for (MultipartFile image : images) {
+                    if (!image.isEmpty()) {
+                        String fileName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
+                        Path filePath = Paths.get(uploadPath, "article", fileName);
+                        Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                        Image img = new Image();
+                        img.setArticleId(articleId);  // 使用正確的 articleId
+                        img.setImagePath("article" + "/" + fileName);
+                        img.setImageOrder(imageOrder++);
+                        imageService.save(img);
+                    }
+                }
+            }
+
+            // 如果文章被鏈接，保存鏈接信息
             if (article.isChained()) {
                 ArticleChain articleChain = new ArticleChain();
-                articleChain.setArticleId(articleId);
+                articleChain.setArticleId(articleId);  // 使用正確的 articleId
                 articleChain.setAuthorAddress(article.getAddress());
                 articleChain.setTransactionHash(article.getTransactionHash());
                 articleChain.setTitle(article.getTitle());
@@ -182,95 +228,24 @@ public class ArticleController {
             log.error("Failed to upload article", e);
             return R.error("Failed to upload article");
         }
-
     }
 
-//    @PostMapping("/upload")
-//    public R upload(
-//            @RequestParam("title") String title,
-//            @RequestParam("content") String content,
-//            @RequestParam("username") String username,
-//            @RequestParam("address") String address,
-//            @RequestParam("publicationDate") long publicationDate,
-//            @RequestParam("chained") boolean chained,
-//            @RequestParam(value = "transactionHash", required = false) String transactionHash,
-//            @RequestParam("images") MultipartFile[] images,
-//            HttpSession session) {
-//
-//        log.debug("Received article data: title={}, content={}, username={}, address={}, publicationDate={}, chained={}",
-//                title, content, username, address, publicationDate, chained);
-//
-//        try {
-//            Article articleEntity = new Article();
-//            articleEntity.setTitle(title);
-//            articleEntity.setContent(content);
-//            articleEntity.setAuthorName(username);
-//            articleEntity.setAuthorAddress(address);
-//            Timestamp timestamp = new Timestamp(publicationDate);
-//            articleEntity.setPublicationDate(timestamp);
-//            articleEntity.setChained(chained);
-//            articleEntity.setState(true);
-//            articleService.save(articleEntity);
-//            Integer articleId = articleEntity.getId();
-//
-//            // 保存圖片
-//            int imageOrder = 1;
-//            for (MultipartFile image : images) {
-//                if (!image.isEmpty()) {
-//                    String fileName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
-//                    Path filePath = Paths.get(uploadPath, fileName);
-//                    Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-//
-//                    Image img = new Image();
-//                    img.setArticleId(articleId);
-//                    img.setImagePath(filePath.toString());
-//                    img.setImageOrder(imageOrder++);
-//                    imageService.save(img);
-//                }
-//            }
-//
-//            // 如果文章被鏈接，保存鏈接信息
-//            if (chained) {
-//                ArticleChain articleChain = new ArticleChain();
-//                articleChain.setArticleId(articleId);
-//                articleChain.setAuthorAddress(address);
-//                articleChain.setTransactionHash(transactionHash);
-//                articleChain.setTitle(title);
-//                articleChain.setTimestamp(publicationDate);
-//                articleChainService.save(articleChain);
-//            }
-//
-//            return R.success("成功發布文章");
-//        } catch (Exception e) {
-//            log.error("Failed to upload article", e);
-//            return R.error("Failed to upload article");
-//        }
-//    }
-
-
-    /**
-     * 文章留言列表
-     *
-     * @return R
-     */
-//    @RequestMapping("/commentList")
-//    public R getCommentList() {
-//        log.debug("debug:getCommentList");
-//         List<Comment> commentList = commentService.list();
-//        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-//
-//        for(Comment comment : commentList) {
-//            Integer id = comment.getUser_id();
-//            userService.getOne(wrapper.eq(User::getId, id));
-//            User user = userService.getOne(wrapper.eq(User::getId, id));
-//            comment.setAuthor(user.getName());
-//        }
-//
-//
-//        log.debug("debug:getCommentList" + commentList.toString());
-//        return R.success(commentList);
-//    }
-
+    @PostMapping("/recordBlockchain")
+    public R recordToBlockchain(@RequestBody ArticleChain article) {
+        log.debug("debug:recordToBlockchain" + article.toString());
+        try {
+            articleService.setchained(article.getArticleId());
+            boolean res = articleChainService.save(article);
+            if(res) {
+                return R.success("成功鏈接文章");
+            } else {
+                return R.error("鏈接文章失敗");
+            }
+        } catch (Exception e) {
+            log.error("Failed to record article to blockchain", e);
+            return R.error("Failed to record article to blockchain");
+        }
+    }
 
     /**
      * 文章留言列表
@@ -278,13 +253,6 @@ public class ArticleController {
      * @param articleId
      * @return
      */
-//    @GetMapping("/commentList/{articleId}")
-//    public R getCommentsByArticleId(@PathVariable Integer articleId) {
-//        log.debug("debug:getCommentList");
-//        List<Comment> commentList = commentService.getCommentsByArticleId(articleId);
-//        log.debug(commentList.toString());
-//        return R.success(commentList);
-//    }
     @GetMapping("/commentList/{articleId}")
     public R getCommentsByArticleId(@PathVariable Integer articleId, @RequestParam Integer userId) {
         List<CommentDto> commentList = commentService.getCommentsByArticleId(articleId, userId);
@@ -334,23 +302,68 @@ public class ArticleController {
         } else return R.error("取消收藏失敗");
     }
 
-    @PostMapping("/addLove")
-    public R addLove(@RequestParam Integer userId, @RequestParam Integer articleId) {
-        boolean success = loveService.addLove(userId, articleId);
+    @PostMapping("/addLike")
+    public R addLike(@RequestParam Integer userId, @RequestParam Integer articleId) {
+        LambdaQueryWrapper<Article> articleWrapper = new LambdaQueryWrapper<>();
+        articleWrapper.eq(Article::getId, articleId);
+        Integer authorId = articleService.getOne(articleWrapper).getAuthorId();
 
+        Activitie activitie = new Activitie();
+        activitie.setUserId(userId);
+        activitie.setTargetId(authorId);
+        activitie.setType("like");
+        activitieService.save(activitie);
+        boolean success = likeService.addLike(userId, articleId);
         if (success) {
-            articleService.updateLoveCount(articleId, 1);
+            articleService.updateLikeCount(articleId, 1);
             return R.success("按讚成功");
         } else return R.error("按讚失敗");
     }
 
+    @PostMapping("/addDislike")
+    public R addDislike(@RequestParam Integer userId, @RequestParam Integer articleId) {
+        boolean success = likeService.addDislike(userId, articleId);
+
+        if (success) {
+            articleService.updateLikeCount(articleId, 0);
+            return R.success("成功");
+        } else return R.error("失敗");
+    }
+
     @PostMapping("/removeLove")
     public R removeLove(@RequestParam Integer userId, @RequestParam Integer articleId) {
-        boolean success = loveService.removeLove(userId, articleId);
+        boolean success = likeService.removeLike(userId, articleId);
         if (success) {
-            articleService.updateLoveCount(articleId, -1);
+            articleService.updateLikeCount(articleId, -1);
             return R.success("取消按讚成功");
         } else return R.error("取消按讚失敗");
+    }
+
+    @RequestMapping("/search={words}")
+    public R serachArticle(@PathVariable("words") String words){
+        LambdaQueryWrapper<Article> searchTitleWrapper = new LambdaQueryWrapper();
+        searchTitleWrapper.like(Article::getTitle, words);
+        List<Article> articleTitleList = articleService.list(searchTitleWrapper);
+        LambdaQueryWrapper<Article> searchContentWrapper = new LambdaQueryWrapper<>();
+        searchContentWrapper.like(Article::getContent, words);
+        List<Article> articleContentList = articleService.list(searchContentWrapper);
+
+        List<Article> articleList = new ArrayList<>();
+        articleList.addAll(articleTitleList);
+        articleList.addAll(articleContentList);
+
+        return R.success(articleList);
+    }
+
+    @GetMapping("/getArticleChainId")
+    public R getArticleChainId(@RequestParam Integer articleId) {
+        ArticleChain articleChain = articleChainService.getOne(new LambdaQueryWrapper<ArticleChain>()
+                .eq(ArticleChain::getArticleId, articleId));
+        if (articleChain == null) {
+            return R.error("Article not found");
+        }
+
+        return R.success(articleChain.getId());
     }
 }
 

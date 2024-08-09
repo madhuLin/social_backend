@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.shihHsin.Dto.LoginDto;
 import com.shihHsin.Dto.SignUpDto;
 import com.shihHsin.common.R;
+import com.shihHsin.pojo.Follow;
 import com.shihHsin.pojo.User;
+import com.shihHsin.service.IFollowService;
 import com.shihHsin.service.IUserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * <p>
@@ -32,6 +35,22 @@ public class UserController {
 
     @Resource
     private IUserService userService;
+
+    @Resource
+    private IFollowService followService;
+
+    @GetMapping("/checkUsername/{username}")
+    public R checkUsername(@PathVariable String username) {
+        log.debug("run checkUsername:" + username);
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        User existingUser = userService.getOne(wrapper.eq(User::getName, username));
+        if (existingUser != null) {
+            return R.error("使用者名稱已存在!");
+        } else {
+            return R.success("使用者名稱可用");
+        }
+    }
+
 
     /**
      * 註冊
@@ -76,7 +95,7 @@ public class UserController {
         // 檢查使用者名稱是否已經存在
         log.debug("run loginDto" + loginDto.toString());
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        User user = userService.getOne(wrapper.eq(User::getEmail, loginDto.getEmail()));
+        User user = userService.getOne(wrapper.eq(User::getName, loginDto.getUsername()));
         if (user == null) {
             return R.error("帳號不存在!");
         }
@@ -98,5 +117,43 @@ public class UserController {
         session.invalidate();
         return R.success("登出成功");
     }
+
+
+
+    @PostMapping("/follow")
+    public R followUser(@RequestParam Integer followerId, @RequestParam Integer followeeId) {
+        try {
+            followService.followUser(followerId, followeeId);
+            return R.success("成功追蹤使用者");
+        } catch (Exception e) {
+            return R.error("追蹤使用者失敗");
+        }
+    }
+
+    @PostMapping("/unfollow")
+    public R unfollowUser(@RequestParam Integer followerId, @RequestParam Integer followeeId) {
+        try {
+            followService.unfollowUser(followerId, followeeId);
+            return R.success("成功取消追蹤使用者");
+        } catch (Exception e) {
+            return R.error("取消追蹤使用者失敗");
+        }
+    }
+
+    @GetMapping("/followers")
+    public R getFollowers(@RequestParam Integer followeeId) {
+        List<Follow> followers = followService.getFollowers(followeeId);
+        return R.success(followers);
+    }
+
+    @GetMapping("/following")
+    public R getFollowing(@RequestParam Integer followerId) {
+        List<Follow> following = followService.getFollowing(followerId);
+        return R.success(following);
+    }
+
+
+
+
 }
 

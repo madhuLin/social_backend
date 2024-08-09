@@ -13,5 +13,5 @@ import com.shihHsin.pojo.User;
  * @since 2024-4-10
  */
 public interface IUserService extends IService<User> {
-
+    String getUserNameById(Integer id);
 }

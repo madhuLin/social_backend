@@ -10,12 +10,10 @@ import java.sql.Timestamp;
 
 @Data
 public class ArticleChain {
-    @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
     private Integer articleId;
     private String transactionHash;
     private String authorAddress;
-    private BigDecimal transactionFee;
     private String title;
     private Long timestamp;
 }

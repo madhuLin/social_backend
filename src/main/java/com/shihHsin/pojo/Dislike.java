@@ -6,8 +6,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName("love")
-public class Love {
+@TableName("dislikes")
+public class Dislike {
     @TableId(type = IdType.AUTO)
     private Integer id;
     private Integer userId;

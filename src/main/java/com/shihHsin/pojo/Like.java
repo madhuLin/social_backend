@@ -11,5 +11,5 @@ public class Like {
     @TableId(type = IdType.AUTO)
     private Integer id;
     private Integer userId;
-    private Integer commentId;
+    private Integer articleId;
 }

@@ -2,6 +2,9 @@ package com.shihHsin.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.shihHsin.pojo.Article;
+
+import java.util.List;
+
 /**
  * <p>
  * 用戶信息
@@ -15,5 +18,11 @@ public interface IArticleService extends IService<Article> {
 
     void updateFavoriteCount(Integer articleId, int i);
 
-    void updateLoveCount(Integer articleId, int i);
+    void updateLikeCount(Integer articleId, int i);
+
+    List<Article> getByBoardId(Integer boardId);
+
+    void setchained(Integer id);
+
+    String getTitleById(int articleId);
 }

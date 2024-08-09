@@ -1,14 +1,11 @@
 package com.shihHsin.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shihHsin.Dto.CommentDto;
 import com.shihHsin.mapper.CommentMapper;
-import com.shihHsin.mapper.LikeMapper;
+import com.shihHsin.mapper.CommentLikeMapper;
 import com.shihHsin.pojo.Comment;
-import com.shihHsin.pojo.Like;
+import com.shihHsin.pojo.CommentLike;
 import com.shihHsin.service.ICommentService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -23,7 +20,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     @Resource
     private CommentMapper commentMapper;
     @Resource
-    private LikeMapper likeMapper;
+    private CommentLikeMapper commentLikeMapper;
 
     public List<CommentDto> getCommentsByArticleId(Integer articleId) {
 //        LambdaQueryWrapper<Comment> queryWrapper = Wrappers.lambdaQuery();
@@ -37,7 +34,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         List<CommentDto> comments = commentMapper.getCommentsWithAuthorNameByArticleId(articleId);
         // 檢查每個評論是否已被指定的用戶按讚過
         for (CommentDto comment : comments) {
-            boolean liked = likeMapper.existsByUserIdAndCommentId(userId, comment.getId());
+            boolean liked = commentLikeMapper.existsByUserIdAndCommentId(userId, comment.getId());
             comment.setLiked(liked);
         }
         return comments;
@@ -49,14 +46,14 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
 
     public boolean likeComment(Integer userId, Integer commentId) {
-        if (likeMapper.existsByUserIdAndCommentId(userId, commentId)) {
+        if (commentLikeMapper.existsByUserIdAndCommentId(userId, commentId)) {
             return false;
         }
 
-        Like like = new Like();
+        CommentLike like = new CommentLike();
         like.setUserId(userId);
         like.setCommentId(commentId);
-        likeMapper.insert(like);
+        commentLikeMapper.insert(like);
 
         Comment comment = commentMapper.selectById(commentId);
         if (comment != null) {

@@ -1,5 +1,6 @@
 package com.shihHsin.pojo;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
@@ -14,10 +15,10 @@ import java.sql.Timestamp;
  */
 @Data
 public class Activitie {
-    @TableId
-    private Integer activityId;
-    private String activityType;
+    @TableId(value = "id", type = IdType.AUTO)
+    private Integer id;
+    private String type;
     private int userId;
     private int targetId;
-    private Timestamp activityTime;
+    private Timestamp time;
 }
