@@ -1,5 +1,6 @@
 package com.shihHsin.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.shihHsin.mapper.FollowMapper;
 import com.shihHsin.pojo.Follow;
@@ -33,5 +34,13 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     @Override
     public List<Follow> getFollowing(Integer followerId) {
         return followMapper.findByFollowerId(followerId);
+    }
+
+    @Override
+    public boolean getMyFollowed(Integer id, Integer userId) {
+//        if(id.equals(userId)) return -1;
+        LambdaQueryWrapper<Follow> queryWrapper = new LambdaQueryWrapper<>();
+        Follow follow = followMapper.selectOne(queryWrapper.eq(Follow::getFollowerId, userId).eq(Follow::getFolloweeId, id));
+        return follow != null;
     }
 }

@@ -10,6 +10,7 @@ public class CommentDto {
     private Integer articleId;
     private Integer userId;
     private String content;
+    private String avatar;
     private Timestamp commentDate;
     private Integer likeCount;
     private String authorName;

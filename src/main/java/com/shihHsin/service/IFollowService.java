@@ -12,4 +12,6 @@ public interface IFollowService extends IService<Follow> {
     public List<Follow> getFollowers(Integer followeeId);
 
     public List<Follow> getFollowing(Integer followerId);
+
+    boolean getMyFollowed(Integer id, Integer userId);
 }

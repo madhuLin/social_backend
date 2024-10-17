@@ -10,6 +10,7 @@ public class VerificationDto {
     private int id;
     private int userId;
     private int articleId;
+    private String avatar;
     private String userName;
     private String title;
     private String reason;

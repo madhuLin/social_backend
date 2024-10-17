@@ -14,4 +14,8 @@ import com.shihHsin.pojo.User;
  */
 public interface IUserService extends IService<User> {
     String getUserNameById(Integer id);
+
+    String getAvatarByUserId(Integer id);
+
+    String getUserAddressByUserId(Integer userId);
 }

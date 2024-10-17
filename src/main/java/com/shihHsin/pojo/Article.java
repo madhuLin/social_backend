@@ -23,7 +23,6 @@ public class Article {
     private String content;
     private Integer authorId;
     private Integer boardId;
-    private String authorName;
     private String authorAddress;
     private Timestamp publicationDate;
     private boolean state;

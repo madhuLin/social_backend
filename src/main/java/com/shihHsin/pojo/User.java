@@ -6,6 +6,8 @@ import java.sql.Timestamp;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
+
 /**
  * <p>
  * 用戶信息
@@ -17,7 +19,7 @@ import lombok.Data;
 @Data
 public class User {
     @TableId(value = "id", type = IdType.AUTO)
-    private Long id;
+    private Integer id;
     private String name;
     private String address;
     private String email;

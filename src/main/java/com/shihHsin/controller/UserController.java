@@ -62,12 +62,12 @@ public class UserController {
         // 檢查使用者名稱是否已經存在
         log.debug("run signUp" + signUpDto.toString());
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        User existingUser = userService.getOne(wrapper.eq(User::getName, signUpDto.getUsername()));
+        User existingUser = userService.getOne(wrapper.eq(User::getEmail, signUpDto.getEmail()));
         if (existingUser != null) {
-            return R.error("使用者名稱已存在!");
+            return R.error("郵箱以註冊!");
         }
 
-        log.debug("run signUpAA:" + signUpDto.toString());
+//        log.debug("run signUpAA:" + signUpDto.toString());
         // 建立使用者物件並設定屬性
         User newUser = new User();
         newUser.setName(signUpDto.getUsername());
@@ -95,11 +95,11 @@ public class UserController {
         // 檢查使用者名稱是否已經存在
         log.debug("run loginDto" + loginDto.toString());
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        User user = userService.getOne(wrapper.eq(User::getName, loginDto.getUsername()));
+        User user = userService.getOne(wrapper.eq(User::getEmail, loginDto.getMail()));
         if (user == null) {
             return R.error("帳號不存在!");
         }
-        log.debug("password" + user.getPassword() + loginDto.getPassword());
+//        log.debug("password" + user.getPassword() + loginDto.getPassword());
         String password = loginDto.getPassword();
         password = DigestUtils.md5DigestAsHex(password.getBytes());
         if(!user.getPassword().equals(password)) {
@@ -107,7 +107,8 @@ public class UserController {
             return R.error("密碼錯誤!");
 
         }
-        if(!user.isStatus()) return R.error("帳號已被禁用!");
+//        if(!user.isStatus()) return R.error("帳號已被禁用!");
+        user.setAvatar(userService.getAvatarByUserId(user.getId()));
         session.setAttribute("user", user);
         return R.success(user);
     }

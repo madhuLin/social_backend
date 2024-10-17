@@ -20,21 +20,21 @@ public class IpfsServiceTest {
     // 上传
     @Test
     public void uploadIpfs() throws IOException {
-        byte[] data = "spring boot".getBytes();
-        String hash = ipfsService.uploadToIpfs(data);
+//        byte[] data = "spring boot".getBytes();
+//        String hash = ipfsService.uploadToIpfs(data);
         // Qmf412jQZiuVUtdgnB36FXFX7xg5V6KEbSJ4dpQuhkLyfD
-        log.debug("hashValue:" + hash);
-        System.out.println("hashValue:" + hash);
+//        log.debug("hashValue:" + hash);
+//        System.out.println("hashValue:" + hash);
     }
 
     // 下载
     @Test
     public void downloadIpfs() {
         String hash = "QmQdGZs715cAhnYMEKg32Yd6r3qkaA7htLRTxtg27kQ7TN";
-        byte[] data = ipfsService.downFromIpfs(hash);
+//        byte[] data = ipfsService.downFromIpfs(hash);
         // spring boot
 
-        log.debug("dataValue:" + new String(data));
-        System.out.println("dataValue:" + new String(data));
+//        log.debug("dataValue:" + new String(data));
+//        System.out.println("dataValue:" + new String(data));
     }
 }

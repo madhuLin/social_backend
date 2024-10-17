@@ -3,10 +3,10 @@
 # 服务器端口配置
 server:
   port: 8000
+  address: 0.0.0.0
 
 upload:
   path: C:/PF/GraduationTopic/Images/
-
 ## 数据库连接配置 aws
 spring:
   datasource:
@@ -23,13 +23,15 @@ spring:
       pool-name: HikariCP
       auto-commit: true
       connection-test-query: SELECT 1
-      validation-timeout: 5000
+      validation-timeout: 10000
   mvc:
     static-path-pattern: /images/**
   web:
     resources:
 #        static-locations: file:/mnt/c/Users/qq104/Documents/Images
-        static-locations: file:C:/PF/GraduationTopic/Images/
+#      static-locations: file:C:/PF/GraduationTopic/Images/
+      static-locations: file:C:/Users/qq104/OneDrive/PF/nootbook/GraduationTopic/Images/
+
 
 
 

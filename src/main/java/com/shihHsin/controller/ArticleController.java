@@ -88,19 +88,33 @@ public class ArticleController {
 
     @GetMapping("/list")
     public R getArticleList(@RequestParam(value = "boardId", required = false) Integer boardId,
-                            @RequestParam(value = "userId", required = false) Integer userId) {
-        log.debug("debug:getArticleList" + (boardId != null ? boardId.toString() : "null") + (userId != null ? userId.toString() : "null"));
+                            @RequestParam(value = "userId", required = false) Integer userId,
+                            @RequestParam(value = "page", required = false, defaultValue = "1") int page) {
+    //    log.debug("debug:getArticleList" + (boardId != null ? boardId.toString() : "null") + (userId != null ? userId.toString() : "null"));
         List<Article> articleList;
         if (boardId != null) {
             articleList = articleService.getByBoardId(boardId);
         } else {
             articleList = articleService.list();
         }
+        Collections.reverse(articleList);
+        // 每頁顯示的文章數量
+        int pageSize = 5;
+        int fromIndex = (page - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, articleList.size());
+
+        // 確保索引範圍不超出列表大小
+        if (fromIndex > articleList.size()) {
+            return R.success(Collections.emptyList());
+        }
+
+        // 取得指定頁面的文章子列表
+        List<Article> paginatedList = articleList.subList(fromIndex, toIndex);
 
         Map<Integer, String> boardName = boardService.getBoardNames();
         List<CompletableFuture<Article2Dto>> futureList = new ArrayList<>();
 
-        for (Article article : articleList) {
+        for (Article article : paginatedList) {
             CompletableFuture<Article2Dto> future = CompletableFuture.supplyAsync(() -> {
                 Article2Dto article2Dto = new Article2Dto(article);
                 if (userId != null) {
@@ -111,6 +125,8 @@ public class ArticleController {
                     article2Dto.setLiked(isLove);
                     article2Dto.setDisliked(isDislike);
                 }
+                article2Dto.setAuthorName(userService.getUserNameById(article.getAuthorId()));
+                article2Dto.setAvatar(userService.getAvatarByUserId(article.getAuthorId()));
                 article2Dto.setBoardName(boardName.get(article.getBoardId()));
                 return article2Dto;
             }).thenCombine(findArticleImagesAsync(article.getId()), (article2Dto, images) -> {
@@ -128,6 +144,54 @@ public class ArticleController {
         return R.success(article2DtoList);
     }
 
+    @GetMapping("/myList")
+    public R getMyArticleList(@RequestParam(value = "userId") Integer userId,
+                            @RequestParam(value = "page", required = false, defaultValue = "1") int page) {
+//        log.debug("debug:getArticleList" + (userId != null ? userId.toString() : "null"));
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::getAuthorId, userId);
+        List<Article> articleList = articleService.list(wrapper);
+
+        Collections.reverse(articleList);
+        // 每頁顯示的文章數量
+        int pageSize = 5;
+        int fromIndex = (page - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, articleList.size());
+
+        // 確保索引範圍不超出列表大小
+        if (fromIndex > articleList.size()) {
+            return R.success(Collections.emptyList());
+        }
+
+        // 取得指定頁面的文章子列表
+        List<Article> paginatedList = articleList.subList(fromIndex, toIndex);
+
+        Map<Integer, String> boardName = boardService.getBoardNames();
+        List<CompletableFuture<Article2Dto>> futureList = new ArrayList<>();
+
+        for (Article article : paginatedList) {
+            CompletableFuture<Article2Dto> future = CompletableFuture.supplyAsync(() -> {
+                Article2Dto article2Dto = new Article2Dto(article);
+                article2Dto.setAuthorName(userService.getUserNameById(article.getAuthorId()));
+                article2Dto.setAvatar(userService.getAvatarByUserId(article.getAuthorId()));
+                article2Dto.setBoardName(boardName.get(article.getBoardId()));
+                return article2Dto;
+            }).thenCombine(findArticleImagesAsync(article.getId()), (article2Dto, images) -> {
+                article2Dto.setImages(images);
+                return article2Dto;
+            });
+
+            futureList.add(future);
+        }
+
+        List<Article2Dto> article2DtoList = futureList.stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.toList());
+
+        return R.success(article2DtoList);
+    }
+
+
     @RequestMapping("/chainList")
     public R getChainList() {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
@@ -138,7 +202,7 @@ public class ArticleController {
 
     @RequestMapping("/chainInfo/{id}")
     public R getArticleChain(@PathVariable("id") Integer id) {
-        log.debug("debug:getById" + id.toString());
+//        log.debug("debug:getById" + id.toString());
         LambdaQueryWrapper<ArticleChain> wrapper = new LambdaQueryWrapper<>();
         ArticleChain articleChain = articleChainService.getOne(wrapper.eq(ArticleChain::getArticleId, id));
         return R.success(articleChain);
@@ -146,7 +210,7 @@ public class ArticleController {
 
     @RequestMapping("/{id}")
     public R getArticleById(@PathVariable("id") Integer id) {
-        log.debug("debug:getById" + id.toString());
+//        log.debug("debug:getById" + id.toString());
 //        LambdaQueryWrapper<ArticleChain> wrapper = new LambdaQueryWrapper<>();
         Article article = articleService.getById(id);
         return R.success(article);
@@ -175,17 +239,18 @@ public class ArticleController {
      */
     @PostMapping("/upload")
     public R upload(@ModelAttribute ArticleDto article, HttpSession session) {
-        log.debug("title:" + article.getTitle()+  "time:"+ article.getPublicationDate());
+//        log.debug("article:" + article.toString());
         try {
             // 創建並保存文章實體
             Article articleEntity = new Article();
             articleEntity.setAuthorId(article.getId());
             articleEntity.setTitle(article.getTitle());
             articleEntity.setContent(article.getContent());
-            articleEntity.setAuthorName(article.getUsername());
+//            articleEntity.setAuthorName(article.getUsername());
             articleEntity.setAuthorAddress(article.getAddress());
             Timestamp timestamp = new Timestamp(article.getPublicationDate());
             articleEntity.setPublicationDate(timestamp);
+            articleEntity.setBoardId(article.getBoardId());
             articleEntity.setChained(article.isChained());
             articleEntity.setState(true);
 
@@ -199,7 +264,7 @@ public class ArticleController {
                 int imageOrder = 1;
                 for (MultipartFile image : images) {
                     if (!image.isEmpty()) {
-                        String fileName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
+                        String fileName = UUID.randomUUID().toString() + ".png";
                         Path filePath = Paths.get(uploadPath, "article", fileName);
                         Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
@@ -213,15 +278,15 @@ public class ArticleController {
             }
 
             // 如果文章被鏈接，保存鏈接信息
-            if (article.isChained()) {
-                ArticleChain articleChain = new ArticleChain();
-                articleChain.setArticleId(articleId);  // 使用正確的 articleId
-                articleChain.setAuthorAddress(article.getAddress());
-                articleChain.setTransactionHash(article.getTransactionHash());
-                articleChain.setTitle(article.getTitle());
-                articleChain.setTimestamp(article.getPublicationDate());
-                articleChainService.save(articleChain);
-            }
+//            if (article.isChained()) {
+//                ArticleChain articleChain = new ArticleChain();
+//                articleChain.setArticleId(articleId);  // 使用正確的 articleId
+//                articleChain.setAuthorAddress(article.getAddress());
+//                articleChain.setTransactionHash(article.getTransactionHash());
+//                articleChain.setTitle(article.getTitle());
+//                articleChain.setTimestamp(article.getPublicationDate());
+//                articleChainService.save(articleChain);
+//            }
 
             return R.success("成功發布文章");
         } catch (Exception e) {
@@ -232,7 +297,7 @@ public class ArticleController {
 
     @PostMapping("/recordBlockchain")
     public R recordToBlockchain(@RequestBody ArticleChain article) {
-        log.debug("debug:recordToBlockchain" + article.toString());
+//        log.debug("debug:recordToBlockchain" + article.toString());
         try {
             articleService.setchained(article.getArticleId());
             boolean res = articleChainService.save(article);
@@ -274,7 +339,7 @@ public class ArticleController {
 
     @PostMapping("/likeComment/{commentId}")
     public R likeComment(@RequestParam Integer userId, @PathVariable Integer commentId) {
-        log.debug("debug:likeComment" + commentId.toString());
+//        log.debug("debug:likeComment" + commentId.toString());
         boolean success = commentService.likeComment(userId, commentId);
         if (success) {
             return R.success("按讚成功");
@@ -341,6 +406,7 @@ public class ArticleController {
 
     @RequestMapping("/search={words}")
     public R serachArticle(@PathVariable("words") String words){
+
         LambdaQueryWrapper<Article> searchTitleWrapper = new LambdaQueryWrapper();
         searchTitleWrapper.like(Article::getTitle, words);
         List<Article> articleTitleList = articleService.list(searchTitleWrapper);
@@ -352,7 +418,43 @@ public class ArticleController {
         articleList.addAll(articleTitleList);
         articleList.addAll(articleContentList);
 
-        return R.success(articleList);
+        Collections.reverse(articleList);
+        // 每頁顯示的文章數量
+//        int pageSize = 5;
+//        int fromIndex = (page - 1) * pageSize;
+//        int toIndex = Math.min(fromIndex + pageSize, articleList.size());
+//
+//        // 確保索引範圍不超出列表大小
+//        if (fromIndex > articleList.size()) {
+//            return R.success(Collections.emptyList());
+//        }
+//
+//        // 取得指定頁面的文章子列表
+//        List<Article> paginatedList = articleList.subList(fromIndex, toIndex);
+
+        Map<Integer, String> boardName = boardService.getBoardNames();
+        List<CompletableFuture<Article2Dto>> futureList = new ArrayList<>();
+
+        for (Article article : articleList) {
+            CompletableFuture<Article2Dto> future = CompletableFuture.supplyAsync(() -> {
+                Article2Dto article2Dto = new Article2Dto(article);
+                article2Dto.setAuthorName(userService.getUserNameById(article.getAuthorId()));
+                article2Dto.setAvatar(userService.getAvatarByUserId(article.getAuthorId()));
+                article2Dto.setBoardName(boardName.get(article.getBoardId()));
+                return article2Dto;
+            }).thenCombine(findArticleImagesAsync(article.getId()), (article2Dto, images) -> {
+                article2Dto.setImages(images);
+                return article2Dto;
+            });
+
+            futureList.add(future);
+        }
+
+        List<Article2Dto> article2DtoList = futureList.stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.toList());
+//        log.debug("article2DtoList:" + article2DtoList.toString());
+        return R.success(article2DtoList);
     }
 
     @GetMapping("/getArticleChainId")

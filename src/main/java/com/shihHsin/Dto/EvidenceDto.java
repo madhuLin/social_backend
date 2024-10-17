@@ -14,6 +14,7 @@ public class EvidenceDto {
 //    private int verificationId;        // 驗證 ID
     private String description;        // 描述
     private String username;                // 提供者 ID
+    private String avatar;
     private Timestamp evidenceDate; // 證據日期
     private String transactionHash;    // 交易哈希
     private List<String> images;

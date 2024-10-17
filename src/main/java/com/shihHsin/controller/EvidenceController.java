@@ -1,13 +1,15 @@
 package com.shihHsin.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.shihHsin.Dto.EvidenceChainDto;
 import com.shihHsin.Dto.EvidenceDto;
 import com.shihHsin.Dto.EvidenceUploadDto;
+import com.shihHsin.Dto.VerificationChainDto;
 import com.shihHsin.common.R;
-import com.shihHsin.mapper.ImageEvidenceMapper;
 import com.shihHsin.pojo.Evidence;
 import com.shihHsin.pojo.Image;
 import com.shihHsin.pojo.ImageEvidence;
+import com.shihHsin.pojo.Verification;
 import com.shihHsin.service.IEvidenceService;
 import com.shihHsin.service.IImageEvidenceService;
 import com.shihHsin.service.ISupportService;
@@ -68,7 +70,7 @@ public class EvidenceController {
 
     @GetMapping("/list")
     public R listEvidence(@RequestParam("id") Integer id, @RequestParam(value = "userId", required = false) Integer userId, HttpSession session) {
-        log.info("list evidence id " + id.toString() + " userId " + userId.toString());
+//        log.info("list evidence id " + id.toString() + " userId " + userId.toString());
         LambdaQueryWrapper<Evidence> queryWrapper = new LambdaQueryWrapper<>();
         List<Evidence> evidenceList = evidenceService.list(queryWrapper.eq(Evidence::getVerificationId, id));
         List<CompletableFuture<EvidenceDto>> futures = new ArrayList<>();
@@ -77,8 +79,9 @@ public class EvidenceController {
             CompletableFuture<EvidenceDto> future = CompletableFuture.supplyAsync(() -> {
                 EvidenceDto evidenceDto = new EvidenceDto(evidence);
                 evidenceDto.setUsername(userService.getUserNameById(evidence.getUserId()));
-                evidenceDto.setSupported(supportService.isSupportedByUserId(evidence.getId(), userId));
+                if(userId != null) evidenceDto.setSupported(supportService.isSupportedByUserId(evidence.getId(), userId));
                 evidenceDto.setSupportCount(supportService.countSupportByEvidenceId(evidence.getId()));
+                evidenceDto.setAvatar(userService.getAvatarByUserId(evidence.getUserId()));
                 return evidenceDto;
             }).thenCombine(findEvidenceImagesAsync(evidence.getId()), (evidenceDto, images) -> {
                 evidenceDto.setImages(images);
@@ -100,20 +103,24 @@ public class EvidenceController {
         log.info("upload evidence", evidence);
         List<MultipartFile> images = evidence.getImages();
         try {
+            // 創建 Evidence 實體
             Evidence evidenceEntity = new Evidence(evidence);
-            evidenceService.save(evidenceEntity);
+
+            // 保存 Evidence 實體，只調用一次 save 方法
             boolean isSaved = evidenceService.save(evidenceEntity);
             if (!isSaved) {
                 return R.error("Save failed");
             }
+
+            // 保存圖片證據
             if (images != null) {
                 int imageOrder = 1;
                 for (MultipartFile image : images) {
                     if (!image.isEmpty()) {
-                        String fileName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
+                        String fileName = UUID.randomUUID() + "_.png";
                         Path filePath = Paths.get(uploadPath, "evidence", fileName);
                         Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
+                        log.debug("image saved to id" + evidenceEntity.getId() + " path " + filePath.toString());
                         ImageEvidence img = new ImageEvidence();
                         img.setEvidenceId(evidenceEntity.getId());  // 使用正確的 evidenceId
                         img.setImagePath("evidence/" + fileName);
@@ -130,16 +137,29 @@ public class EvidenceController {
         return R.success("uploadEvidence");
     }
 
+
     @Resource
     private ISupportService supportService;
 
     @PostMapping("support")
     public R supportEvidence(@RequestParam("evidenceId") Integer evidenceId, @RequestParam("userId") Integer userId, HttpSession session) {
-//        log.info("support evidence {}", id.toString());
+        log.info("support evidence {}", evidenceId.toString());
         boolean success = supportService.supportEvidence(evidenceId, userId);
         if (success) {
             return R.success("support success");
         }
         return R.error("support failed");
+    }
+
+    @GetMapping("/getEvidenceChainInfo")
+    public R<EvidenceChainDto> getVerificationChainInfo(@RequestParam(value = "id") Integer id) {
+        Evidence evidence = evidenceService.getById(id);
+        EvidenceChainDto evidenceChainDto = new EvidenceChainDto();
+        evidenceChainDto.setEvidenceId(evidence.getId());
+        evidenceChainDto.setTransactionHash(evidence.getTransactionHash());
+        evidenceChainDto.setAuthorAddress(userService.getUserAddressByUserId(evidence.getUserId()));
+        evidenceChainDto.setTimestamp(evidence.getEvidenceDate().getTime());
+        log.debug("evidenceChainDto:" + evidenceChainDto.toString());
+        return R.success(evidenceChainDto);
     }
 }

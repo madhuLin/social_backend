@@ -45,5 +45,11 @@ public class UserRepositoryIntegrationTest {
     }
 
 
+    @Test
+    public void test() {
+        log.debug("askadnjkasn");
+    }
+
+
 
 }

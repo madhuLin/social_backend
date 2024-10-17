@@ -7,6 +7,7 @@ import com.shihHsin.mapper.CommentLikeMapper;
 import com.shihHsin.pojo.Comment;
 import com.shihHsin.pojo.CommentLike;
 import com.shihHsin.service.ICommentService;
+import com.shihHsin.service.IUserService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     @Resource
     private CommentLikeMapper commentLikeMapper;
 
+    @Resource
+    private IUserService userService;
+
     public List<CommentDto> getCommentsByArticleId(Integer articleId) {
 //        LambdaQueryWrapper<Comment> queryWrapper = Wrappers.lambdaQuery();
 //        queryWrapper.eq(Comment::getArticleId, articleId)
@@ -36,6 +40,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         for (CommentDto comment : comments) {
             boolean liked = commentLikeMapper.existsByUserIdAndCommentId(userId, comment.getId());
             comment.setLiked(liked);
+            comment.setAvatar(userService.getAvatarByUserId(comment.getUserId()));
         }
         return comments;
     }
