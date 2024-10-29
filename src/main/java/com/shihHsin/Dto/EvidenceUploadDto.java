@@ -15,4 +15,5 @@ public class EvidenceUploadDto {
     private int userId;                // 提供者 ID
     private String transactionHash;    // 交易哈希
     private Timestamp evidenceDate; // 證據日期
+    private boolean chained;
 }

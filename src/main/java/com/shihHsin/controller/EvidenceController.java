@@ -100,7 +100,7 @@ public class EvidenceController {
     }
     @PostMapping("/upload")
     public R uploadEvidence(@ModelAttribute EvidenceUploadDto evidence, HttpSession session) {
-        log.info("upload evidence", evidence);
+        log.info("upload evidence", evidence.toString());
         List<MultipartFile> images = evidence.getImages();
         try {
             // 創建 Evidence 實體

@@ -11,6 +11,7 @@ import java.util.List;
 public class EvidenceDto {
     private int id;
     private int userId;
+    private boolean chained;
 //    private int verificationId;        // 驗證 ID
     private String description;        // 描述
     private String username;                // 提供者 ID
@@ -27,5 +28,6 @@ public class EvidenceDto {
         this.description = evidence.getDescription();
         this.transactionHash = evidence.getTransactionHash();
         this.evidenceDate = evidence.getEvidenceDate();
+        this.chained = evidence.getChained();
     }
 }

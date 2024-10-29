@@ -90,7 +90,7 @@ public class ArticleController {
     public R getArticleList(@RequestParam(value = "boardId", required = false) Integer boardId,
                             @RequestParam(value = "userId", required = false) Integer userId,
                             @RequestParam(value = "page", required = false, defaultValue = "1") int page) {
-    //    log.debug("debug:getArticleList" + (boardId != null ? boardId.toString() : "null") + (userId != null ? userId.toString() : "null"));
+//        log.debug("debug:getArticleList" + (boardId != null ? boardId.toString() : "board null") + (userId != null ? userId.toString() : "user null") + "page" + page);
         List<Article> articleList;
         if (boardId != null) {
             articleList = articleService.getByBoardId(boardId);
@@ -98,6 +98,7 @@ public class ArticleController {
             articleList = articleService.list();
         }
         Collections.reverse(articleList);
+
         // 每頁顯示的文章數量
         int pageSize = 5;
         int fromIndex = (page - 1) * pageSize;
@@ -133,14 +134,12 @@ public class ArticleController {
                 article2Dto.setImages(images);
                 return article2Dto;
             });
-
             futureList.add(future);
         }
 
         List<Article2Dto> article2DtoList = futureList.stream()
                 .map(CompletableFuture::join)
                 .collect(Collectors.toList());
-
         return R.success(article2DtoList);
     }
 

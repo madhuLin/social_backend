@@ -19,10 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -150,8 +147,6 @@ public class ProfileController {
                 .map(Follow::getFolloweeId)
                 .collect(Collectors.toList());
 
-        // 进一步处理 followeeId，例如查询用户信息
-//        List<User> followeeUsers = userService.listByIds(followeeIds);
         List<FollowDto> followDto = new ArrayList<>();
         for (Integer followeeId : followeeIds) {
             LambdaQueryWrapper<Article> articleCountWrapper = new LambdaQueryWrapper<>();
@@ -226,38 +221,35 @@ public class ProfileController {
     }
 
     @RequestMapping("/myfollowboard={id}")
-    public R getMyBoardList(@PathVariable("id") Integer id){
+    public R getMyBoardList(@PathVariable("id") Integer id) {
+        // 查詢追蹤的看板ID
         LambdaQueryWrapper<FollowBoard> fbWrapper = new LambdaQueryWrapper<>();
         fbWrapper.eq(FollowBoard::getUserId, id);
-        List<FollowBoard> fbList = followBoardService.list(fbWrapper);
-        List<Integer> followboardIds = fbList.stream()
+        List<Integer> followboardIds = followBoardService.list(fbWrapper).stream()
                 .map(FollowBoard::getBoardId)
                 .collect(Collectors.toList());
 
-        List<BoardDto> boardDto = new ArrayList<>();
-        for (Integer followboardId : followboardIds) {
-            BoardDto boardDto1 = new BoardDto();
-            LambdaQueryWrapper<Board> nameWrapper = new LambdaQueryWrapper<>();
-            nameWrapper.eq(Board::getId, followboardId);
-            String name = boardService.getOne(nameWrapper).getName();
-
-            LambdaQueryWrapper<Board> discriptionWrapper = new LambdaQueryWrapper<>();
-            discriptionWrapper.eq(Board::getId, followboardId);
-            String discription = boardService.getOne(discriptionWrapper).getDescription();
-
-            LambdaQueryWrapper<Board> logoBase64Wrapper = new LambdaQueryWrapper<>();
-            logoBase64Wrapper.eq(Board::getId, followboardId);
-            String logoBase64 = boardService.getOne(logoBase64Wrapper).getLogo();
-
-            boardDto1.setName(name);
-            boardDto1.setDescription(discription);
-            boardDto1.setLogoBase64(logoBase64);
-
-            boardDto.add(boardDto1);
+        // 批量查詢Board信息，避免重複查詢
+        if (followboardIds.isEmpty()) {
+            return R.success(Collections.emptyList());
         }
-        log.debug(boardDto.toString());
-        return R.success(boardDto);
+        LambdaQueryWrapper<Board> boardWrapper = new LambdaQueryWrapper<>();
+        boardWrapper.in(Board::getId, followboardIds);
+        List<Board> boards = boardService.list(boardWrapper);
+
+        // 將查詢結果轉換為BoardDto列表
+        List<BoardDto> boardDtoList = boards.stream().map(board -> {
+            BoardDto boardDto = new BoardDto();
+            boardDto.setName(board.getName());
+            boardDto.setDescription(board.getDescription());
+            boardDto.setLogoBase64(board.getLogo());
+            return boardDto;
+        }).collect(Collectors.toList());
+
+        log.debug(boardDtoList.toString());
+        return R.success(boardDtoList);
     }
+
 
     @Value("${upload.path}")
     private String uploadPath;
